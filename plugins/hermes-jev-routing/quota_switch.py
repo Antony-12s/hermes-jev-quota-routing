@@ -88,35 +88,35 @@ def plan_turn(model: str, gate, state: dict, slot: dict, now: Optional[float] = 
             new = {"mode": "claude"} if state.get("mode") not in (None, "", "claude") else None
             if gate.claude_low_spare and not slot.get("spare_noted"):
                 slot["spare_noted"] = True
-                return Plan("warn", f"Claude account นี้เหลือ {gate.claude_left:.0f}% ({gate.claude_label}) "
-                                    "แต่ยังมีอีก account ใน pool จะสลับ account ให้เอง", state=new)
+                return Plan("warn", f"This Claude account has {gate.claude_left:.0f}% left ({gate.claude_label}), "
+                                    "but another account in the pool has room. Switching accounts automatically.", state=new)
             return Plan(state=new)
         left = f"{gate.claude_left:.0f}%" if gate.claude_left is not None else "?"
         if gate.codex_usable:
             if slot.get("declined") and not gate.claude_floor:
-                return Plan("warn", f"Claude เหลือ {left} ({gate.claude_label}) มุงเลือกอยู่ Claude ต่อ")
+                return Plan("warn", f"Claude has {left} left ({gate.claude_label}). You chose to stay on Claude.")
             pending = state.get("mode") == "pending" and state.get("deadline", 0) > now
             deadline = float(state["deadline"]) if pending else now + OFFER_SECONDS
-            msg = (f"Claude เหลือ {left} ({gate.claude_label}) จะสลับไป Codex "
-                   f"ภายใน {max(0, int(deadline - now))} วินาที ถ้าไม่ตอบ")
+            msg = (f"Claude has {left} left ({gate.claude_label}). Switching to Codex "
+                   f"in {max(0, int(deadline - now))} seconds unless you answer.")
             return Plan("offer", msg, dict(CODEX_PICK), deadline,
                         state={"mode": "pending", "deadline": deadline, "from": model})
         if gate.claude_floor:
             return Plan("block", qg.wait_message(gate), state={"mode": "wait",
                         "until": gate.resume_at.timestamp() if gate.resume_at else 0})
-        return Plan("warn", f"Claude เหลือ {left} ({gate.claude_label}) และ Codex ใช้ไม่ได้ "
-                            "ทำงานให้สั้นและเซฟงานบ่อย ๆ")
+        return Plan("warn", f"Claude has {left} left ({gate.claude_label}) and Codex is unavailable. "
+                            "Keep tasks short and save work often.")
     if provider == "openai-codex":
         back = dict(CLAUDE_DEFAULT)
         previous = str(state.get("from") or "")
         if provider_of(previous) == "anthropic":
             back["model"] = previous
         if gate.claude_recovered and not gate.claude_floor and state.get("mode") in ("codex", "pending"):
-            return Plan("switch", f"Claude กลับมาแล้ว (เหลือ {gate.claude_left or 100:.0f}%) สลับกลับ Claude",
+            return Plan("switch", f"Claude is back ({gate.claude_left or 100:.0f}% left). Switching back to Claude.",
                         back, state={"mode": "claude"})
         if gate.codex_floor:
             if gate.claude_usable or not gate.claude_floor:
-                return Plan("switch", "Codex ใกล้หมด สลับกลับ Claude", back, state={"mode": "claude"})
+                return Plan("switch", "Codex is nearly out. Switching back to Claude.", back, state={"mode": "claude"})
             return Plan("block", qg.wait_message(gate), state={"mode": "wait",
                         "until": gate.resume_at.timestamp() if gate.resume_at else 0})
         if state.get("mode") != "codex":
@@ -132,5 +132,5 @@ def tool_block(tool_name: str, model: str, gate) -> Optional[str]:
     floor = (provider == "anthropic" and gate.claude_floor) or (provider == "openai-codex" and gate.codex_floor)
     if not floor:
         return None
-    return ("quota ใกล้หมด (เหลือไม่ถึง 3%): ห้ามเรียก tool เพิ่ม. หยุดตรงนี้ แล้วสรุปให้ user "
-            "ว่าทำอะไรเสร็จแล้ว อะไรค้างอยู่ และไฟล์ไหนแก้ไปแล้วบ้าง เพื่อทำต่อหลัง quota กลับมา")
+    return ("Quota nearly out (under 3%): do not call more tools. Stop here and tell the user "
+            "what is done, what is left, and which files were changed, so work can resume after the reset.")

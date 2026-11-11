@@ -1,7 +1,5 @@
 # hermes-jev-quota-routing
 
-ให้ [Jev (TypeSafe)](https://typesafe.ai) เลือกโมเดลกับ effort ให้ [Hermes Agent](https://hermes-agent.nousresearch.com) เอง ทั้งแชทหลักและ sub-agent ด้วยกติกาเดียวกัน พร้อมตัวเฝ้า quota ที่เตือนก่อน แล้วสลับ Claude ไป Codex ให้อัตโนมัติ
-
 Lets TypeSafe Jev pick the model and effort for Hermes Agent, in the main chat and in subagents, under one rule set, with a quota guard that warns first and then moves from Claude to Codex.
 
 ![routing map](docs/routing-map.png)

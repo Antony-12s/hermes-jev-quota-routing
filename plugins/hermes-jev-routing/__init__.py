@@ -543,7 +543,7 @@ def _command(raw: str = "", *, session_id: str = "") -> str:  # noqa: C901
         return suggestion_text(path, write="--write" in parts)
     if head == ["stay"]:
         slot["declined"] = True
-        return "อยู่ Claude ต่อ จะถามใหม่ตอน quota เหลือไม่ถึง 3%"
+        return "Staying on Claude. Will ask again when its quota drops below 3%."
     if head == ["on"]:
         slot["enabled"] = True
         publish_toggle(session_id, slot)

@@ -31,63 +31,63 @@
 
 <div class="map">
   <div class="top">
-    <span class="pill">ข้อความของมุง</span>
-    <span class="hint">Jev (TypeSafe) อ่านงานแล้วเลือกโมเดลกับ effort ให้เอง</span>
+    <span class="pill">Your message</span>
+    <span class="hint">Jev (TypeSafe) reads the task and picks the model and effort</span>
   </div>
   <div class="stem"></div>
 
   <div class="cols">
     <div class="col">
-      <h3>แชทหลัก</h3>
-      <div class="sub">ใช้ได้เฉพาะ Claude เพราะสลับค่ายกลางแชทไม่ได้</div>
-      <div class="gate"><b>ปุ่ม Jev off</b>: ใช้โมเดลที่มุงเลือกเป๊ะ ๆ<br><b>ปุ่ม Jev on</b>: Jev เลือกตามตารางนี้</div>
-      <div class="row"><span class="task">งานง่าย ถามสั้น</span><span class="chip opus">Opus 5.5 · low</span></div>
-      <div class="row"><span class="task">โค้ดทั่วไป แก้ bug</span><span class="chip opus">Opus 5.5 · medium</span></div>
-      <div class="row"><span class="task">งานหนัก วางแผน</span><span class="chip opus">Opus 5.5 · high</span></div>
-      <div class="row"><span class="task">ยากเกิน Opus ใช้เวลานาน</span><span class="chip fable">Fable 5.2 · high</span></div>
-      <div class="row"><span class="task">ถ้า Fable ล่ม</span><span class="chip opus">Opus 5.5 · xhigh</span></div>
-      <div class="row"><span class="task">Jev ไม่มั่นใจ (&lt; 0.65)</span><span class="chip keep">ไม่เปลี่ยน</span></div>
+      <h3>Main chat</h3>
+      <div class="sub">Claude only: a session cannot change provider mid-chat</div>
+      <div class="gate"><b>Jev off</b>: your picked model, exactly as-is<br><b>Jev on</b>: Jev picks from this table</div>
+      <div class="row"><span class="task">Quick question</span><span class="chip opus">Opus 5.5 · low</span></div>
+      <div class="row"><span class="task">Normal coding, bug fix</span><span class="chip opus">Opus 5.5 · medium</span></div>
+      <div class="row"><span class="task">Heavy work, planning</span><span class="chip opus">Opus 5.5 · high</span></div>
+      <div class="row"><span class="task">Beyond Opus, long-running</span><span class="chip fable">Fable 5.2 · high</span></div>
+      <div class="row"><span class="task">If Fable fails</span><span class="chip opus">Opus 5.5 · xhigh</span></div>
+      <div class="row"><span class="task">Jev unsure (&lt; 0.65)</span><span class="chip keep">no change</span></div>
     </div>
 
     <div class="col">
       <h3>Sub-agent</h3>
-      <div class="sub">delegate_task · แต่ละตัวเลือกค่ายได้อิสระ</div>
-      <div class="row"><span class="task">ค้นไฟล์ งานเล็ก</span><span class="chip opus">Opus 5.5 · low</span></div>
-      <div class="row"><span class="task">โค้ดทั่วไป สรุป</span><span class="chip opus">Opus 5.5 · medium</span></div>
-      <div class="row"><span class="task">debug ยาก ออกแบบหลายไฟล์</span><span class="chip opus">Opus 5.5 · high</span></div>
-      <div class="row"><span class="task">ยากเกิน Opus refactor ใหญ่</span><span class="chip fable">Fable 5.2</span></div>
-      <div class="row"><span class="task">implement แก้ test security</span><span class="chip codex">Codex</span></div>
-      <div class="row"><span class="task">ศิลปะ UI logo SVG</span><span class="chip codex">Codex</span></div>
-      <div class="row"><span class="task">research หาข้อมูล เทียบราคา</span><span class="chip gem">Gemini</span></div>
-      <div class="row"><span class="task">Jev ไม่ตอบ</span><span class="chip opus">Opus 5.5</span></div>
+      <div class="sub">delegate_task · each child picks its own provider</div>
+      <div class="row"><span class="task">File search, small edit</span><span class="chip opus">Opus 5.5 · low</span></div>
+      <div class="row"><span class="task">Normal coding, summaries</span><span class="chip opus">Opus 5.5 · medium</span></div>
+      <div class="row"><span class="task">Hard debugging, multi-file design</span><span class="chip opus">Opus 5.5 · high</span></div>
+      <div class="row"><span class="task">Beyond Opus, big refactor</span><span class="chip fable">Fable 5.2</span></div>
+      <div class="row"><span class="task">Implement, fix tests, security</span><span class="chip codex">Codex</span></div>
+      <div class="row"><span class="task">Art: UI, logo, SVG</span><span class="chip codex">Codex</span></div>
+      <div class="row"><span class="task">Research, fact-finding, prices</span><span class="chip gem">Gemini</span></div>
+      <div class="row"><span class="task">Jev gives no answer</span><span class="chip opus">Opus 5.5</span></div>
     </div>
 
     <div class="col">
-      <h3>รูปภาพ</h3>
-      <div class="sub">กรูเป็นคนสั่งเอง ไม่ผ่าน Jev</div>
-      <div class="row"><span class="task">ปกติ</span><span class="chip codex">Codex</span></div>
-      <div class="row"><span class="task">Codex quota หมด</span><span class="chip gem">Gemini</span></div>
-      <div class="row"><span class="task">ต้องการความละเอียดสูง</span><span class="chip gem">Gemini</span></div>
-      <div class="gate" style="margin-top:10px">Codex แม่นกว่า สะกดไทยถูก<br>วัดแบบ blind ได้ 31 ต่อ 27</div>
+      <h3>Images</h3>
+      <div class="sub">Chosen by the agent, not by Jev</div>
+      <div class="row"><span class="task">Default</span><span class="chip codex">Codex</span></div>
+      <div class="row"><span class="task">Codex out of quota</span><span class="chip gem">Gemini</span></div>
+      <div class="row"><span class="task">High resolution needed</span><span class="chip gem">Gemini</span></div>
+      <div class="gate" style="margin-top:10px">Codex is more accurate<br>blind judge: 31 vs 27 of 40</div>
     </div>
   </div>
 
   <div class="quota">
-    <h3>ยามเฝ้า quota · ทำงานตลอด ไม่ว่าปุ่ม Jev จะเปิดหรือปิด</h3>
+    <h3>Quota guard · always on, Jev on or off</h3>
     <div class="steps">
-      <div class="step">Claude เหลือ <b>≤ 10%</b><br>เตือน + นับถอยหลัง 2 นาที</div>
+      <div class="step">Claude at <b>≤ 10%</b><br>warning + 2-minute countdown</div>
       <span class="arrow">›</span>
-      <div class="step">มุงกดสลับ หรือรอจนหมดเวลา<br><b>สลับไป Codex</b> (กดอยู่ Claude ต่อได้)</div>
+      <div class="step">You press switch, or time runs out<br><b>move to Codex</b> ("Stay on Claude" keeps it)</div>
       <span class="arrow">›</span>
-      <div class="step">Codex ก็ไม่พอ<br><b>บอกให้รอ</b> + เวลารีเซ็ต</div>
+      <div class="step">Codex low too<br><b>asks you to wait</b> + reset time</div>
       <span class="arrow">›</span>
-      <div class="step">Claude กลับมา <b>≥ 25%</b><br>กลับไปใช้ Claude</div>
+      <div class="step">Claude back at <b>≥ 25%</b><br>back to Claude</div>
     </div>
   </div>
 
   <div class="legend">
     <span class="chip opus">Opus 5.5</span><span class="chip fable">Fable 5.2</span><span class="chip codex">Codex gpt-6.1-sol</span><span class="chip gem">Gemini 3.8 Flash</span>
-    <span class="hint">Opus กับ Fable ใช้ quota Claude ก้อนเดียวกัน · Gemini ใช้บัญชี Google แยก</span>
+    <span class="hint">Opus and Fable share the Claude quota · Gemini uses a separate Google account</span>
   </div>
-  <div class="foot">แก้การตั้งค่าแล้ว ต้องเปิดแชทใหม่ถึงจะมีผลกับ sub-agent</div>
+  <div class="foot">Settings changes reach subagents from the next new chat</div>
 </div>

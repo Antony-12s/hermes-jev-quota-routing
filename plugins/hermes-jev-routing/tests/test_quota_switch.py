@@ -53,7 +53,7 @@ class PlanTurnTest(unittest.TestCase):
     def test_floor_claude_no_codex_blocks_with_wait_time(self):
         plan = self.plan("claude-opus-5-5", gate(claude_left=2, codex_accounts=0, resume_at=RESET))
         self.assertEqual(plan.action, "block")
-        self.assertIn("รอถึง", plan.message)
+        self.assertIn("Wait until", plan.message)
         self.assertEqual(plan.state["mode"], "wait")
 
     def test_spare_account_warns_once(self):

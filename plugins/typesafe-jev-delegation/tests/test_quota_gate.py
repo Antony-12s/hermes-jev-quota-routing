@@ -119,7 +119,7 @@ class EvaluateTest(unittest.TestCase):
         codex = [acct("plus1", ("Session", 100, SOON), ("Weekly", 34, WEEK))]
         gate = qg.evaluate(NOW, cache=cache((95, 10), codex=codex), auth=auth(codex=[exhausted("plus1", SOON)]))
         self.assertEqual(gate.resume_at, datetime.fromisoformat(SOON))
-        self.assertIn("รอถึง", qg.wait_message(gate))
+        self.assertIn("Wait until", qg.wait_message(gate))
 
     def test_recovered_needs_25_percent(self):
         self.assertFalse(qg.evaluate(NOW, cache=cache((76, 10)), auth=auth()).claude_recovered)
@@ -160,7 +160,7 @@ class SubRouteGateTest(unittest.TestCase):
     def test_both_empty_refuses_with_wait(self):
         with self.assertRaises(DelegationRouteError) as caught:
             self.run_gate(gate(claude_left=2, codex_accounts=0), OPTIONS["deep"]["route"])
-        self.assertIn("รอถึง", str(caught.exception))
+        self.assertIn("Wait until", str(caught.exception))
 
     def test_codex_pick_falls_back_to_deep(self):
         out = self.run_gate(gate(claude_left=80, codex_accounts=0), OPTIONS["codex"]["route"])

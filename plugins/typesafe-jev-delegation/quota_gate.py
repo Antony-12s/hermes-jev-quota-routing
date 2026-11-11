@@ -206,7 +206,7 @@ def evaluate(now: Optional[datetime] = None, *, cache: Optional[dict] = None, au
 def local_hhmm(moment: Optional[datetime]) -> str:
     """Bangkok-style local time; adds the day when it is not today."""
     if moment is None:
-        return "ไม่ทราบเวลา"
+        return "an unknown time"
     local = moment.astimezone()
     today = datetime.now().astimezone().date()
     if local.date() == today:
@@ -215,9 +215,9 @@ def local_hhmm(moment: Optional[datetime]) -> str:
 
 
 def wait_message(gate: Gate) -> str:
-    claude = f"Claude เหลือ {gate.claude_left:.0f}% ({gate.claude_label})" if gate.claude_left is not None else "Claude ใกล้หมด"
-    codex = "Codex ไม่มี account ที่ใช้ได้" if gate.codex_accounts <= 0 else f"Codex เหลือ {gate.codex_left or 0:.0f}%"
-    return f"quota ไม่พอ: {claude}, {codex}. รอถึง {local_hhmm(gate.resume_at)} แล้วค่อยสั่งต่อ"
+    claude = f"Claude has {gate.claude_left:.0f}% left ({gate.claude_label})" if gate.claude_left is not None else "Claude is nearly out"
+    codex = "Codex has no usable account" if gate.codex_accounts <= 0 else f"Codex has {gate.codex_left or 0:.0f}% left"
+    return f"Not enough quota: {claude}, {codex}. Wait until {local_hhmm(gate.resume_at)}, then continue."
 
 
 # --- switch state shared between main chat and subagents -----------------------------------
