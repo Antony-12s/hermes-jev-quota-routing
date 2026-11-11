@@ -37,7 +37,10 @@ The installer now configures the existing [account-pool](https://github.com/roqi
 - At **95% used (5% remaining)**, bench a nearly exhausted account when another account has room. Return it to rotation after its blocking window resets.
 - Use `fill_first` for Claude and Codex, so the pool's ordering is respected.
 - Reuse `hermes-account-balance.service` / `.timer`; back up existing unit files under `$HERMES_HOME/backups/account-rotation-*` before replacing them. Reinstalling does not create a second timer.
-- Start a balance run immediately and verify that the timer is active.
+- Start a balance run immediately and verify that the timer is active. If a vendor error makes that first run fail, print a warning and keep the timer retrying; do not hide the remaining installation instructions.
+- Pin account rotation to `--profile default`, even when a different sticky profile is selected. The routing installer separately targets the profile identified by `HERMES_HOME`.
+
+The unit files are intentionally normalized to the policy above; custom schedule or command-line options are replaced, with the originals backed up. Unchanged units do not create redundant backups.
 
 This rotates **accounts within a provider**, not Claude to Codex. Claude-to-Codex warnings remain a separate feature. The timer covers providers with accounts; providers without a usage adapter keep their existing order.
 

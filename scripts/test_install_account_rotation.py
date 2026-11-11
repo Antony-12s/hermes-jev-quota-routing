@@ -31,7 +31,12 @@ class RotationInstallTest(unittest.TestCase):
                 '    log.write(json.dumps([Path(sys.argv[0]).name, *sys.argv[1:]]) + "\\n")\n'
                 'if Path(sys.argv[0]).name == "systemctl" and os.environ.get("NO_MANAGER"):\n'
                 '    sys.exit(1)\n'
-                'if sys.argv[1:3] == ["plugins", "install"] and os.environ.get("FAIL_INSTALL"):\n'
+                'args = sys.argv[1:]\n'
+                'if args[:1] == ["--profile"]:\n'
+                '    args = args[2:]\n'
+                'if args[:2] == ["plugins", "install"] and os.environ.get("FAIL_INSTALL"):\n'
+                '    sys.exit(1)\n'
+                'if args == ["--user", "start", "hermes-account-balance.service"] and os.environ.get("FAIL_BALANCE"):\n'
                 '    sys.exit(1)\n'
             )
             executable.chmod(0o755)
@@ -60,7 +65,7 @@ class RotationInstallTest(unittest.TestCase):
         self.assertIn('OnUnitActiveSec=1min', timer)
         self.assertIn('AccuracySec=5s', timer)
         commands = self.commands()
-        self.assertIn(['hermes', 'plugins', 'install', 'account-pool', '--enable', '--yes-deps'], commands)
+        self.assertIn(['hermes', '--profile', 'default', 'plugins', 'install', 'account-pool', '--enable', '--yes-deps'], commands)
         self.assertIn(['systemctl', '--user', 'enable', '--now', 'hermes-account-balance.timer'], commands)
         self.assertIn(['systemctl', '--user', 'start', 'hermes-account-balance.service'], commands)
         self.assertIn(['systemctl', '--user', 'is-active', '--quiet', 'hermes-account-balance.timer'], commands)
@@ -71,8 +76,8 @@ class RotationInstallTest(unittest.TestCase):
         plugin.write_text('name: account-pool\n')
         result = self.run_setup()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn(['hermes', 'plugins', 'enable', 'account-pool'], self.commands())
-        self.assertFalse(any(command[1:3] == ['plugins', 'install'] for command in self.commands()))
+        self.assertIn(['hermes', '--profile', 'default', 'plugins', 'enable', 'account-pool'], self.commands())
+        self.assertFalse(any(command[3:5] == ['plugins', 'install'] for command in self.commands()))
 
     def test_rerun_backs_up_old_units(self):
         self.units.mkdir(parents=True)
@@ -115,6 +120,60 @@ class RotationInstallTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('default profile', result.stdout)
         self.assertFalse(self.units.exists())
+
+    def test_sticky_profile_cannot_redirect_commands_or_timer(self):
+        self.hermes_home.mkdir(parents=True)
+        (self.hermes_home / 'active_profile').write_text('work\n')
+        result = self.run_setup()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        commands = [command for command in self.commands() if command[0] == 'hermes']
+        self.assertTrue(commands)
+        for command in commands:
+            self.assertEqual(command[1:3], ['--profile', 'default'])
+        service = (self.units / 'hermes-account-balance.service').read_text()
+        self.assertIn('--profile default account all balance --threshold 95', service)
+
+    def test_main_installer_pins_the_intended_profile(self):
+        self.hermes_home.mkdir(parents=True)
+        (self.hermes_home / 'active_profile').write_text('work\n')
+        result = subprocess.run(['bash', str(INSTALLER)], env=self.env, text=True,
+                                capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for command in self.commands():
+            if command[0] == 'hermes':
+                self.assertEqual(command[1:3], ['--profile', 'default'])
+
+    def test_native_custom_home_units_can_be_reinstalled(self):
+        custom = self.home / 'custom'
+        self.env['HERMES_HOME'] = str(custom)
+        self.units.mkdir(parents=True)
+        (self.units / 'hermes-account-balance.service').write_text(
+            f'[Service]\nEnvironment=HERMES_HOME={custom}\nExecStart=/bin/true\n')
+        result = self.run_setup()
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_first_balance_failure_keeps_instructions_and_warns(self):
+        self.env['FAIL_BALANCE'] = '1'
+        result = subprocess.run(['bash', str(INSTALLER)], env=self.env, text=True,
+                                capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('first balance run failed', result.stdout.lower())
+        self.assertIn('Still to do by hand', result.stdout)
+
+    def test_unchanged_units_do_not_create_more_backups(self):
+        self.assertEqual(self.run_setup().returncode, 0)
+        self.assertEqual(self.run_setup().returncode, 0)
+        self.assertFalse((self.hermes_home / 'backups').exists())
+
+    def test_other_home_units_are_not_overwritten(self):
+        self.units.mkdir(parents=True)
+        service = self.units / 'hermes-account-balance.service'
+        original = 'Environment="HERMES_HOME=/another/home"\n'
+        service.write_text(original)
+        result = self.run_setup()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(service.read_text(), original)
+        self.assertFalse(any(command[0] == 'hermes' for command in self.commands()))
 
     def test_main_installer_configures_rotation(self):
         result = subprocess.run(['bash', str(INSTALLER)], env=self.env, text=True,

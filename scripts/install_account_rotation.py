@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -44,27 +45,30 @@ def main():
     if any(path.is_symlink() for path in (service_path, timer_path)):
         raise RuntimeError('Existing account-balance units are symlinks; manage them with their original installer.')
     if service_path.exists():
-        existing = service_path.read_text()
-        # A user has one account-pool timer. Do not redirect another home's shared timer.
-        expected_env = f'Environment={quote("HERMES_HOME=" + str(home))}'
-        default_home = (Path.home() / '.hermes').resolve()
-        other_home = ('Environment=HERMES_HOME=' in existing or 'Environment="HERMES_HOME=' in existing)
-        if (other_home and expected_env not in existing) or (not other_home and home != default_home):
+        existing = service_path.read_text(encoding='utf-8')
+        # Accept both the native plugin's unquoted home and this installer's quoted home.
+        unit_home = Path.home() / '.hermes'
+        for line in existing.splitlines():
+            if line.strip().startswith('Environment='):
+                for assignment in shlex.split(line.strip().partition('=')[2]):
+                    if assignment.startswith('HERMES_HOME='):
+                        unit_home = Path(assignment.partition('=')[2].replace('%%', '%'))
+        if unit_home.expanduser().resolve() != home:
             raise RuntimeError('Existing account-balance timer belongs to another Hermes home; leaving it unchanged.')
 
     if not (home / 'plugins/account-pool/plugin.yaml').exists():
-        run(hermes, 'plugins', 'install', 'account-pool', '--enable', '--yes-deps')
+        run(hermes, '--profile', 'default', 'plugins', 'install', 'account-pool', '--enable', '--yes-deps')
     else:
-        run(hermes, 'plugins', 'enable', 'account-pool')
+        run(hermes, '--profile', 'default', 'plugins', 'enable', 'account-pool')
     for provider in ('anthropic', 'openai-codex'):
-        run(hermes, 'config', 'set', f'credential_pool_strategies.{provider}', 'fill_first')
+        run(hermes, '--profile', 'default', 'config', 'set', f'credential_pool_strategies.{provider}', 'fill_first')
 
     config = {
         service_path: (
             '[Unit]\nDescription=Balance Hermes accounts before quota exhaustion\n\n'
             '[Service]\nType=oneshot\n'
             f'Environment={quote("HERMES_HOME=" + str(home))}\n'
-            f'ExecStart=:{quote(hermes)} account all balance --threshold 95\n'
+            f'ExecStart=:{quote(hermes)} --profile default account all balance --threshold 95\n'
             'TimeoutStartSec=600\n'
         ),
         timer_path: (
@@ -73,7 +77,9 @@ def main():
             '[Install]\nWantedBy=timers.target\n'
         ),
     }
-    existing_paths = [path for path in config if path.exists()]
+    changed = {path: content for path, content in config.items()
+               if not path.exists() or path.read_text(encoding='utf-8') != content}
+    existing_paths = [path for path in changed if path.exists()]
     if existing_paths:
         backup_root = home / 'backups'
         backup_root.mkdir(parents=True, exist_ok=True)
@@ -82,19 +88,24 @@ def main():
             shutil.copy2(path, backup / path.name)
         print(f'Previous account-balance units backed up to {backup}')
     units.mkdir(parents=True, exist_ok=True)
-    for path, content in config.items():
-        path.write_text(content)
+    for path, content in changed.items():
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=units, delete=False) as pending:
+            pending.write(content)
+        os.replace(pending.name, path)
     run('systemctl', '--user', 'daemon-reload')
     run('systemctl', '--user', 'enable', '--now', f'{UNIT}.timer')
     run('systemctl', '--user', 'restart', f'{UNIT}.timer')
-    run('systemctl', '--user', 'start', f'{UNIT}.service')
+    first_run = subprocess.run(['systemctl', '--user', 'start', f'{UNIT}.service'])
     run('systemctl', '--user', 'is-active', '--quiet', f'{UNIT}.timer')
-    print('Account rotation enabled: check every minute; bench at 95% used (5% left) when a spare is usable.')
+    if first_run.returncode:
+        print('WARNING: the first balance run failed; the timer is active and will retry. '
+              'Check journalctl --user -u hermes-account-balance.service.')
+    print('Account rotation timer enabled: check every minute; bench at 95% used (5% left) when a spare is usable.')
 
 
 if __name__ == '__main__':
     try:
         main()
-    except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
+    except (OSError, RuntimeError, ValueError, subprocess.CalledProcessError) as error:
         print(f'Account rotation setup failed: {error}', file=sys.stderr)
         sys.exit(1)
