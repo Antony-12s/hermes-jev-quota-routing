@@ -51,6 +51,9 @@ hermes config set delegation.provider anthropic >/dev/null
 hermes config set delegation.model claude-opus-5-5 >/dev/null
 echo "subagent routes set (codex: $has_codex, gemini: $has_gemini)"
 
+# Account rotation is separate from Jev's cross-provider quota guard.
+python3 "$REPO/scripts/install_account_rotation.py"
+
 echo
 echo "Done. Still to do by hand:"
 grep -q '^TYPESAFE_API_KEY=' "$HOME_DIR/.env" 2>/dev/null \

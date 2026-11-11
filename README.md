@@ -27,7 +27,31 @@ Lets TypeSafe Jev pick the model and effort for Hermes Agent, in the main chat a
 3. Codex too low as well: Hermes tells you to wait, with the earliest reset time.
 4. Claude back at 25% or more: back to Claude.
 
-Without the Desktop app (CLI, messaging) it warns and asks you to wait; it never switches on its own.
+Without the Desktop app (CLI, messaging), the **cross-provider guard** warns and asks you to wait; it never changes provider on its own. Same-provider account rotation below is independent and does not need the Desktop app.
+
+## Automatic account rotation (Linux)
+
+The installer now configures the existing [account-pool](https://github.com/roqianjas/hermes-account-pool) plugin and its systemd user timer:
+
+- Check live usage **every minute** with `hermes account all balance --threshold 95`.
+- At **95% used (5% remaining)**, bench a nearly exhausted account when another account has room. Return it to rotation after its blocking window resets.
+- Use `fill_first` for Claude and Codex, so the pool's ordering is respected.
+- Reuse `hermes-account-balance.service` / `.timer`; back up existing unit files under `$HERMES_HOME/backups/account-rotation-*` before replacing them. Reinstalling does not create a second timer.
+- Start a balance run immediately and verify that the timer is active.
+
+This rotates **accounts within a provider**, not Claude to Codex. Claude-to-Codex warnings remain a separate feature. The timer covers providers with accounts; providers without a usage adapter keep their existing order.
+
+Requires multiple signed-in accounts for uninterrupted work. A minute of polling plus vendor usage-reporting delay is not an instant threshold trigger; a large request or parallel burst can still consume the remaining quota. If all accounts are nearly full, account-pool does not bench every account; the quota guard or vendor error handles that case. An explicit environment token may override pool selection; the installer never removes credentials.
+
+Automatic timer setup is **Linux/systemd-user only**. Other platforms or unavailable user managers print a clear "not configured" warning; this is not a Windows/macOS rotation installer. Named profiles skip shared-timer setup; run it from the default profile. An existing timer owned by another Hermes home is left unchanged with an error.
+
+To configure only account rotation on an existing installation:
+
+```bash
+python3 scripts/install_account_rotation.py
+systemctl --user list-timers hermes-account-balance.timer
+hermes account anthropic doctor
+```
 
 ## Install
 
@@ -45,6 +69,7 @@ The installer:
 - writes `~/.hermes/jev-routing/main.json`, or keeps yours and saves the new one as `main.json.example`
 - enables both plugins and sets `delegation.backend: jev_routes`
 - adds the Codex routes only if you have an `openai-codex` login, and the Gemini route only if the `antigravity-oauth` plugin is enabled
+- on Linux with a running user systemd manager, installs/enables the catalog `account-pool` dependency and configures the one-minute, 95%-used account-balance timer; existing account-pool installations are enabled, not updated
 
 Then:
 
@@ -61,6 +86,7 @@ Then:
 | `plugins/typesafe-jev-delegation/` | Subagent backend `jev_routes` and the shared quota rule `quota_gate.py`. Design notes in `DECISIONS.md`. |
 | `examples/main.json` | Main-chat routes. |
 | `scripts/delegation_options.py` | Builds the subagent routes for the installer. |
+| `scripts/install_account_rotation.py` | Sets up account-pool and its Linux user timer (5% left, every minute). |
 | `docs/routing-map.html` | The diagram above. |
 
 ### Changes to the upstream hermes-jev-routing
@@ -74,7 +100,7 @@ Then:
 ```bash
 cd plugins/hermes-jev-routing && python3 -m unittest discover -s tests -q && node --test tests/*.test.mjs
 cd ../typesafe-jev-delegation && python3 -m unittest discover -s tests -q
-cd ../../scripts && python3 -m unittest -q test_delegation_options
+cd ../../scripts && python3 -m unittest discover -s . -q
 ```
 
 Run them with the Python from your Hermes install if imports fail.
