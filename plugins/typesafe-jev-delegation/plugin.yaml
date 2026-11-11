@@ -1,0 +1,14 @@
+name: typesafe-jev-delegation
+label: TypeSafe Jev delegation routes
+kind: standalone
+version: 0.1.0
+author: wasakorn
+license: MIT
+description: >
+  Adds the jev_routes delegation backend (delegation.backend: jev_routes). TypeSafe Jev picks one
+  of your configured routes per subagent from the sanitized task goal only. Any problem (bad
+  config, sensitive goal, missing TYPESAFE_API_KEY, timeout, low confidence) uses the default
+  delegation route. Inert until you select the backend.
+requires_hermes: ">=0.22.5"
+provides_tools: []
+provides_hooks: []
