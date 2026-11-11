@@ -175,6 +175,36 @@ class RotationInstallTest(unittest.TestCase):
         self.assertEqual(service.read_text(), original)
         self.assertFalse(any(command[0] == 'hermes' for command in self.commands()))
 
+    def test_main_installer_bundles_both_desktop_features(self):
+        result = subprocess.run(['bash', str(INSTALLER)], env=self.env, text=True,
+                                capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for plugin in ('jev-map', 'hermes-jev-routing'):
+            source = self.hermes_home / 'plugins' / plugin / 'desktop/plugin.js'
+            staged = self.hermes_home / 'desktop-plugins' / plugin / 'plugin.js'
+            self.assertTrue(source.is_file(), f'Missing bundled source: {plugin}')
+            self.assertTrue(staged.is_file(), f'Missing desktop load copy: {plugin}')
+            self.assertEqual(staged.read_bytes(), source.read_bytes())
+            marker = json.loads((staged.parent / '.hermes-package.json').read_text())
+            self.assertEqual(marker['package'], plugin)
+            self.assertEqual(marker['source'], str(source.parent))
+            self.assertIn(['hermes', '--profile', 'default', 'plugins', 'enable', plugin], self.commands())
+        self.assertTrue((self.hermes_home / 'plugins/jev-map/dashboard/plugin_api.py').is_file())
+        self.assertIn('Jev on', (self.hermes_home / 'desktop-plugins/hermes-jev-routing/plugin.js').read_text())
+        self.assertIn('jev-map', result.stdout)
+
+    def test_desktop_reinstall_backs_up_changed_copy(self):
+        target = self.hermes_home / 'desktop-plugins/jev-map/plugin.js'
+        target.parent.mkdir(parents=True)
+        target.write_text('// old local customization\n')
+        result = subprocess.run(['bash', str(INSTALLER)], env=self.env, text=True,
+                                capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        backups = list((self.hermes_home / 'backups').glob('*/desktop-plugins/jev-map/plugin.js'))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual(backups[0].read_text(), '// old local customization\n')
+        self.assertNotEqual(target.read_text(), backups[0].read_text())
+
     def test_main_installer_configures_rotation(self):
         result = subprocess.run(['bash', str(INSTALLER)], env=self.env, text=True,
                                 capture_output=True, timeout=30)

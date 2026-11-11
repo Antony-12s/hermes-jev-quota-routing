@@ -1,0 +1,11 @@
+name: jev-map
+version: 0.2.1
+license: MIT
+description: "Jev route map: tiers, kind models, effective mode, recent picks. Desktop side pane + /jev-map widget."
+author: wasakorn
+manifest_version: 2
+api_version: 1
+kind: standalone
+provides_commands:
+  - jev-map
+provides_tools: []

@@ -1,0 +1,11 @@
+{
+  "name": "jev-map",
+  "label": "Jev Map",
+  "description": "Route map for Jev model routing: tiers, kind models, effective mode, recent picks.",
+  "version": "0.2.1",
+  "api": "plugin_api.py",
+  "tab": {
+    "path": "/jev-map",
+    "hidden": true
+  }
+}

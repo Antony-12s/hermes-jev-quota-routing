@@ -68,9 +68,10 @@ cd hermes-jev-quota-routing
 
 The installer:
 
-- copies both plugins into `~/.hermes/plugins` (`HERMES_HOME` respected; old copies go to `~/.hermes/backups/`)
+- copies all three bundled plugins (`hermes-jev-routing`, `typesafe-jev-delegation`, `jev-map`) into `~/.hermes/plugins` (`HERMES_HOME` respected; old copies go to `~/.hermes/backups/`)
+- stages both Desktop entrypoints in `$HERMES_HOME/desktop-plugins/`, with package markers and backups of changed Desktop copies
 - writes `~/.hermes/jev-routing/main.json`, or keeps yours and saves the new one as `main.json.example`
-- enables both plugins and sets `delegation.backend: jev_routes`
+- enables the three agent-side plugins and sets `delegation.backend: jev_routes`
 - adds the Codex routes only if you have an `openai-codex` login, and the Gemini route only if the `antigravity-oauth` plugin is enabled
 - on Linux with a running user systemd manager, installs/enables the catalog `account-pool` dependency and configures the one-minute, 95%-used account-balance timer; existing account-pool installations are enabled, not updated
 
@@ -78,8 +79,20 @@ Then:
 
 1. Add `TYPESAFE_API_KEY=...` to `~/.hermes/.env`.
 2. Optional, for the quota guard: `hermes plugins install rarf/hermes-quota-plugin --enable`. Without it the guard has no data and never blocks.
-3. Restart the Desktop app, open Settings > Plugins and turn on **hermes-jev-routing**. Desktop plugins from outside the catalog start switched off.
-4. Open a **new chat**. A running chat keeps the subagent routing it started with.
+3. Restart the Desktop app, open **Settings > Plugins** and enable **BOTH `hermes-jev-routing` and `jev-map`**. Hermes requires explicit opt-in for the Desktop half of external packages; installing/enabling the agent half alone does not enable the UI. The installer does not bypass that choice.
+4. Open the **Jev map** pane for the live **Jev routing** monitor. The **Jev on / Jev off** button appears beside Send when a chat is focused. Floating/undocking uses the host app's pane controls where supported.
+5. Open a **new chat**. A running chat keeps the subagent routing it started with.
+
+## Desktop UI on another machine
+
+Both UI features are bundled; no files from the author's home directory are needed:
+
+- **Jev routing monitor**: `jev-map` includes the live-call hooks, the read-only `/api/plugins/jev-map/map` backend, and the Desktop pane.
+- **Jev on/off**: `hermes-jev-routing/desktop/plugin.js` includes the session-scoped composer button and routing/quota strip.
+
+If neither appears, enable both Desktop packages in Settings > Plugins after restart. If the monitor is present but empty, send a message first: it shows real model calls, not preloaded history. A hidden pane is not an uninstalled plugin; open Jev map in the app's pane controls.
+
+`jev-map` is bundled from [Antony-12s/jev-map](https://github.com/Antony-12s/jev-map), source commit `1ba6d759594954a47fc226e0f245880b47221700`, with English labels and installation-home paths. No personal logs, account data or app preferences are included.
 
 ## What is in here
 
@@ -87,8 +100,10 @@ Then:
 |---|---|
 | `plugins/hermes-jev-routing/` | Main-chat routing, Desktop button, quota switch. Fork of Apostol Apostolov's plugin (MIT, see its `LICENSE`). |
 | `plugins/typesafe-jev-delegation/` | Subagent backend `jev_routes` and the shared quota rule `quota_gate.py`. Design notes in `DECISIONS.md`. |
+| `plugins/jev-map/` | Live routing monitor pane, read-only backend and `/jev-map` widget. |
 | `examples/main.json` | Main-chat routes. |
 | `scripts/delegation_options.py` | Builds the subagent routes for the installer. |
+| `scripts/install_desktop_plugins.py` | Stages both Desktop UI plugins into the actual loader directory. |
 | `scripts/install_account_rotation.py` | Sets up account-pool and its Linux user timer (5% left, every minute). |
 | `docs/routing-map.html` | The diagram above. |
 
@@ -103,7 +118,8 @@ Then:
 ```bash
 cd plugins/hermes-jev-routing && python3 -m unittest discover -s tests -q && node --test tests/*.test.mjs
 cd ../typesafe-jev-delegation && python3 -m unittest discover -s tests -q
-cd ../../scripts && python3 -m unittest discover -s . -q
+cd ../jev-map && python3 -m unittest discover -s tests -q
+cd ../../scripts && python3 -m unittest discover -s . -q && node --test desktop-ui.test.mjs
 ```
 
 Run them with the Python from your Hermes install if imports fail.

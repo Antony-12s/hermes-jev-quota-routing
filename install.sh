@@ -5,7 +5,7 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOME_DIR="${HERMES_HOME:-$HOME/.hermes}"
-PLUGINS=(hermes-jev-routing typesafe-jev-delegation)
+PLUGINS=(hermes-jev-routing typesafe-jev-delegation jev-map)
 
 command -v hermes >/dev/null || { echo "hermes CLI not found. Install Hermes Agent first." >&2; exit 1; }
 command -v python3 >/dev/null || { echo "python3 not found." >&2; exit 1; }
@@ -37,8 +37,10 @@ else
   echo "wrote $main_json"
 fi
 
-hermes_cli plugins enable hermes-jev-routing >/dev/null
-hermes_cli plugins enable typesafe-jev-delegation >/dev/null
+for name in "${PLUGINS[@]}"; do
+  hermes_cli plugins enable "$name" >/dev/null
+done
+python3 "$REPO/scripts/install_desktop_plugins.py" "$HOME_DIR" "$backup"
 hermes_cli config set plugins.entries.hermes-jev-routing.settings.mode auto >/dev/null
 hermes_cli config set plugins.entries.hermes-jev-routing.settings.config_path "$main_json" >/dev/null
 
@@ -64,5 +66,6 @@ grep -q '^TYPESAFE_API_KEY=' "$HOME_DIR/.env" 2>/dev/null \
   || echo "  - add TYPESAFE_API_KEY=<your key> to $HOME_DIR/.env (get one at https://typesafe.ai)"
 [ -d "$HOME_DIR/plugins/quota" ] \
   || echo "  - optional, for quota warnings: hermes plugins install rarf/hermes-quota-plugin --enable"
-echo "  - restart the Hermes Desktop app, then Settings > Plugins > turn on hermes-jev-routing"
+echo "  - restart Hermes Desktop; Settings > Plugins: enable BOTH jev-map and hermes-jev-routing"
+echo "  - open the Jev map pane for live routing; Jev on/off appears beside Send"
 echo "  - open a NEW chat: running chats keep their old subagent routing"
